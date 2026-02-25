@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const STAGES = require('../constants/stages');
 
 /**
  * @typedef {Object} BatchUpdate
@@ -13,7 +14,8 @@ const updateSchema = new mongoose.Schema({
   stage: {
     type: String,
     required: true,
-    enum: ['farmer', 'Mandi', 'Transport', 'Retailer']
+    enum: STAGES,
+    lowercase: true // Normalize to lowercase for consistency
   },
   actor: {
     type: String,
@@ -122,9 +124,10 @@ const batchSchema = new mongoose.Schema({
     type: String,
     required: true,
     enum: {
-      values: ['farmer', 'Mandi', 'Transport', 'Retailer'],
-      message: 'Invalid stage. Must be one of: farmer, Mandi, Transport, Retailer'
+      values: STAGES,
+      message: `Invalid stage. Must be one of: ${STAGES.join(', ')}`
     },
+    lowercase: true, // Normalize to lowercase for consistency
     default: 'farmer'
   },
   isRecalled: {
