@@ -148,7 +148,25 @@ if (process.env.NODE_ENV === 'development') {
     allowedOrigins.push('http://localhost:3000', 'http://localhost:5173');
 }
 
-app.use(cors());
+// Deduplicate origins
+const uniqueAllowedOrigins = [...new Set(allowedOrigins)];
+
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, curl requests)
+        if (!origin) return callback(null, true);
+
+        if (uniqueAllowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            console.warn(`[CORS BLOCKED] Origin: ${origin}`);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true
+};
+
+app.use(cors(corsOptions));
 
 // Body parsing
 const maxFileSize = parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024;
