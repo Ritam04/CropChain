@@ -56,40 +56,49 @@ Be helpful, friendly, and focus on CropChain-specific guidance. Use agricultural
     getFunctionDefinitions() {
         return [
             {
-                name: 'search_batch',
-                description: 'Search for a specific crop batch by ID',
-                parameters: {
-                    type: 'object',
-                    properties: {
-                        batchId: {
-                            type: 'string',
-                            description: 'The batch ID to search for (format: CROP-YYYY-XXX)'
-                        }
-                    },
-                    required: ['batchId']
+                type: "function",
+                function: {
+                    name: 'search_batch',
+                    description: 'Search for a specific crop batch by ID',
+                    parameters: {
+                        type: 'object',
+                        properties: {
+                            batchId: {
+                                type: 'string',
+                                description: 'The batch ID to search for (format: CROP-YYYY-XXX)'
+                            }
+                        },
+                        required: ['batchId']
+                    }
                 }
             },
             {
-                name: 'get_batch_stats',
-                description: 'Get overall statistics about batches in the system',
-                parameters: {
-                    type: 'object',
-                    properties: {},
-                    required: []
+                type: "function",
+                function: {
+                    name: 'get_batch_stats',
+                    description: 'Get overall statistics about batches in the system',
+                    parameters: {
+                        type: 'object',
+                        properties: {},
+                        required: []
+                    }
                 }
             },
             {
-                name: 'explain_process',
-                description: 'Explain a specific CropChain process or feature',
-                parameters: {
-                    type: 'object',
-                    properties: {
-                        topic: {
-                            type: 'string',
-                            description: 'The topic to explain (e.g., "batch creation", "QR scanning", "supply chain")'
-                        }
-                    },
-                    required: ['topic']
+                type: "function",
+                function: {
+                    name: 'explain_process',
+                    description: 'Explain a specific CropChain process or feature',
+                    parameters: {
+                        type: 'object',
+                        properties: {
+                            topic: {
+                                type: 'string',
+                                description: 'The topic to explain (e.g., "batch creation", "QR scanning", "supply chain")'
+                            }
+                        },
+                        required: ['topic']
+                    }
                 }
             }
         ];
@@ -205,8 +214,8 @@ Be helpful, friendly, and focus on CropChain-specific guidance. Use agricultural
             const response = await axios.post('https://api.openai.com/v1/chat/completions', {
                 model: this.model,
                 messages: messages,
-                functions: this.getFunctionDefinitions(),
-                function_call: 'auto',
+                tools: this.getFunctionDefinitions(),
+                tool_choice: "auto",
                 max_tokens: this.maxTokens,
                 temperature: this.temperature
             }, {
@@ -219,9 +228,10 @@ Be helpful, friendly, and focus on CropChain-specific guidance. Use agricultural
             const aiResponse = response.data.choices[0].message;
 
             // Handle function calls
-            if (aiResponse.function_call) {
-                const functionName = aiResponse.function_call.name;
-                const parameters = JSON.parse(aiResponse.function_call.arguments);
+            if (aiResponse.tool_calls) {
+                const toolCall = aiResponse.tool_calls[0];
+                const functionName = toolCall.function.name;
+                const parameters = JSON.parse(toolCall.function.arguments);
                 
                 const functionResult = await this.executeFunction(functionName, parameters, batchService);
                 
