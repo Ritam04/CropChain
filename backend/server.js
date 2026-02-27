@@ -252,34 +252,6 @@ if (PROVIDER_URL && CONTRACT_ADDRESS && PRIVATE_KEY) {
 }
 
 // Helper functions
-async function generateBatchId() {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
-    try {
-        const counter = await Counter.findOneAndUpdate(
-            { name: 'batchId' },
-            { $inc: { seq: 1 } },
-            { new: true, upsert: true, session }
-        );
-
-        const currentYear = new Date().getFullYear();
-        const batchId = `CROP-${currentYear}-${String(counter.seq).padStart(3, '0')}`;
-
-        await session.commitTransaction();
-        session.endSession();
-
-        return batchId;
-
-    } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
-        throw error;
-/**
- * Generate batch ID with optional session support for transaction safety
- * @param {mongoose.ClientSession} session - MongoDB session for transaction
- * @returns {string} - Generated batch ID
- */
 async function generateBatchId(session = null) {
     const options = { new: true, upsert: true };
     if (session) {
@@ -291,7 +263,9 @@ async function generateBatchId(session = null) {
         { $inc: { seq: 1 } },
         options
     );
-    return `CROP-2024-${String(counter.seq).padStart(3, '0')}`;
+
+    const batchId = `CROP-${new Date().getFullYear()}-${String(counter.seq).padStart(4, '0')}`;
+    return batchId;
 }
 
 async function generateQRCode(batchId) {
