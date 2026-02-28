@@ -21,7 +21,6 @@ const { createBatchSchema, updateBatchSchema } = require("./validations/batchSch
 const { protect, adminOnly, authorizeBatchOwner, authorizeRoles } = require('./middleware/auth');
 const apiResponse = require('./utils/apiResponse');
 const crypto = require('crypto');
-const mongoose = require('mongoose');
 
 // Import MongoDB Model
 const Batch = require('./models/Batch');
@@ -257,7 +256,7 @@ async function generateBatchId(session = null) {
     if (session) {
         options.session = session;
     }
-    
+
     const counter = await Counter.findOneAndUpdate(
         { name: 'batchId' },
         { $inc: { seq: 1 } },
@@ -308,10 +307,10 @@ app.use('/api/verification', generalLimiter, verificationRoutes);
 app.post('/api/batches', batchLimiter, protect, validateRequest(createBatchSchema), async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
-    
+
     try {
         const validatedData = req.body;
-        
+
         // Generate batch ID within transaction for atomicity
         const batchId = await generateBatchId(session);
         const qrCode = await generateQRCode(batchId);
@@ -344,7 +343,7 @@ app.post('/api/batches', batchLimiter, protect, validateRequest(createBatchSchem
         // Commit the transaction
         await session.commitTransaction();
         session.endSession();
-        
+
         console.log(`[SUCCESS] Batch created: ${batchId} by user ${req.user.id} (${req.user.email}) from IP: ${req.ip}`);
 
         const response = apiResponse.successResponse(
@@ -357,7 +356,7 @@ app.post('/api/batches', batchLimiter, protect, validateRequest(createBatchSchem
         // Abort transaction on error
         await session.abortTransaction();
         session.endSession();
-        
+
         console.error('Error creating batch:', error);
         const response = apiResponse.errorResponse(
             'Failed to create batch',
@@ -638,7 +637,7 @@ if (process.env.NODE_ENV !== 'test') {
         console.log(`  ✓ Admin Role Authorization`);
 
         console.log('\n⚙️  Configuration:');
-        console.log(`  • CORS origins: ${allowedOrigins.length > 0 ? allowedOrigins.join(', ') : 'None configured'}`);
+        console.log(`  • CORS origins: ${uniqueAllowedOrigins.length > 0 ? uniqueAllowedOrigins.join(', ') : 'None configured'}`);
         console.log(`  • Max file size: ${Math.round(maxFileSize / 1024 / 1024)}MB`);
         console.log(`  • Rate limit window: ${Math.ceil(rateLimitWindowMs / 60000)} minutes`);
 
