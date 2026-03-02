@@ -26,6 +26,31 @@ const crypto = require('crypto');
 const Batch = require('./models/Batch');
 const Counter = require('./models/Counter');
 
+// ==================== GLOBAL EXCEPTION HANDLERS ====================
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('🔥 UNHANDLED REJECTION:', reason);
+    console.error('Promise:', promise);
+    // Log to external service in production
+    if (process.env.NODE_ENV === 'production') {
+        // In production, you might want to send to a logging service
+        // sendToLoggingService({ type: 'unhandledRejection', reason, promise });
+    }
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+    console.error('🔥 UNCAUGHT EXCEPTION:', error);
+    // Log to external service in production
+    if (process.env.NODE_ENV === 'production') {
+        // In production, you might want to send to a logging service
+        // sendToLoggingService({ type: 'uncaughtException', error });
+    }
+    // Exit with non-zero code to indicate failure
+    process.exit(1);
+});
+
 // Connect to Database
 connectDB();
 
@@ -251,6 +276,11 @@ if (PROVIDER_URL && CONTRACT_ADDRESS && PRIVATE_KEY) {
 }
 
 // Helper functions
+/**
+ * Generate batch ID with optional session support for transaction safety
+ * @param {mongoose.ClientSession} session - MongoDB session for transaction
+ * @returns {string} - Generated batch ID
+ */
 async function generateBatchId(session = null) {
     const options = { new: true, upsert: true };
     if (session) {
@@ -262,9 +292,9 @@ async function generateBatchId(session = null) {
         { $inc: { seq: 1 } },
         options
     );
-
-    const batchId = `CROP-${new Date().getFullYear()}-${String(counter.seq).padStart(4, '0')}`;
-    return batchId;
+    
+    const currentYear = new Date().getFullYear();
+    return `CROP-${currentYear}-${String(counter.seq).padStart(3, '0')}`;
 }
 
 async function generateQRCode(batchId) {
@@ -309,6 +339,9 @@ app.post('/api/batches', batchLimiter, protect, validateRequest(createBatchSchem
     session.startTransaction();
 
     try {
+        session = await mongoose.startSession();
+        session.startTransaction();
+        
         const validatedData = req.body;
 
         // Generate batch ID within transaction for atomicity
@@ -647,7 +680,9 @@ if (process.env.NODE_ENV !== 'test') {
                 console.warn('  ⚠️  MONGODB_URI not set - using in-memory storage');
             }
             if (!process.env.JWT_SECRET) {
-                console.warn('  ⚠️  JWT_SECRET not set - authentication will not work');
+                console.warn('  ⚠️  JWT_SECRET not set - a390
+ 
+uthentication will not work');
             }
             if (!PROVIDER_URL || !CONTRACT_ADDRESS) {
                 console.warn('  ⚠️  Blockchain configuration incomplete - running in demo mode');
